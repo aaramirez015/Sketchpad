@@ -26,9 +26,9 @@ func _input(event: InputEvent) -> void:
 			if event.button_index == MOUSE_BUTTON_MIDDLE:
 				is_dragging = event.pressed
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				_zoom(1.0 / zoom_speed)
+				_zoom_at(1.0 / zoom_speed, event.position)
 			elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				_zoom(zoom_speed)
+				_zoom_at(zoom_speed, event.position)
 		elif event is InputEventMouseMotion:
 			if is_dragging:
 				var drag_diff = (event.relative / zoom) * drag_speed
@@ -74,7 +74,7 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 		position -= drag_diff
 
 		if touch_distance > 0.0:
-			_zoom(touch_distance / previous_touch_distance)
+			_zoom_at(touch_distance / previous_touch_distance, touch_center)
 
 	previous_touch_center = touch_center
 	previous_touch_distance = touch_distance
@@ -98,3 +98,15 @@ func _zoom(factor: float) -> void:
 	zoom *= factor
 	zoom.x = clamp(zoom.x, min_zoom, max_zoom)
 	zoom.y = clamp(zoom.y, min_zoom, max_zoom)
+
+
+## Zooms the camera by a specified [param factor] while keeping the canvas
+## point under [param screen_point] in the same place on screen.
+func _zoom_at(factor: float, screen_point: Vector2) -> void:
+	var old_zoom := zoom
+	_zoom(factor)
+	if not is_inside_tree():
+		return
+
+	var from_center := screen_point - get_viewport_rect().size / 2.0
+	position += from_center / old_zoom - from_center / zoom
